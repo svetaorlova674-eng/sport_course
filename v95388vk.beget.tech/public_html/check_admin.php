@@ -2,7 +2,10 @@
 // check_admin.php — Скрипт защиты (Middleware)
 
 // 1. Включаем доступ к сессии
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 
 // 2. Проверяем два условия:
 //    А. Пользователь вообще вошел? (есть ли user_id)

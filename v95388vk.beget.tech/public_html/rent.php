@@ -7,6 +7,8 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/status_update.php';
+
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
@@ -16,48 +18,32 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = (int)$_SESSION['user_id'];
 $inventory_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-
-
 if ($inventory_id <= 0) {
-    die('Ошибка: Неверный ID инвентаря');
+    die('Неверный ID инвентаря');
 }
 
+// Получаем данные об инвентаре
 $stmt = $pdo->prepare("SELECT * FROM inventory WHERE id = ?");
 $stmt->execute([$inventory_id]);
 $item = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$item) {
-    die('Ошибка: Попытка заказать несуществующий товар! Ваш IP записан.');
+    die('Инвентарь не найден');
 }
 
-if ($item['status'] !== 'free') {
-    die('Ошибка: Инвентарь недоступен');
+// Приводим статус к нижнему регистру для надежности
+$normalized_status = strtolower(trim($item['status']));
+
+// Проверяем что товар вообще доступен для аренды
+if ($normalized_status === 'archived') {
+    die('Этот инвентарь находится в архиве и недоступен для аренды');
 }
 
-
-// Задание В: Защита от накрутки
-$stmt = $pdo->prepare("
-    SELECT start_time 
-    FROM rent_history 
-    WHERE user_id = ? AND inventory_id = ? 
-    ORDER BY start_time DESC 
-    LIMIT 1
-");
-$stmt->execute([$user_id, $inventory_id]);
-$last_rent = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if ($last_rent) {
-    $last_rent_time = strtotime($last_rent['start_time']);
-    $current_time = time();
-    $minutes_passed = ($current_time - $last_rent_time) / 60;
-    
-    if ($minutes_passed < 5) {
-        $wait_time = ceil(5 - $minutes_passed);
-        die("Ошибка: Вы не можете арендовать этот инвентарь чаще чем раз в 5 минут. Подождите еще {$wait_time} минут.");
-    }
+// Проверяем свободен ли товар (допускаем пустой статус как свободный)
+if (!in_array($normalized_status, ['free', ''])) {
+    die('Инвентарь недоступен для аренды. Статус: "' . $item['status'] . '"');
 }
-
-
+// Получаем тариф
 $stmt = $pdo->prepare("SELECT * FROM tariffs WHERE inventory_id = ?");
 $stmt->execute([$inventory_id]);
 $tariff = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -65,6 +51,17 @@ $tariff = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$tariff) {
     die('Для данного инвентаря тариф не задан');
 }
+
+// ===== Получаем занятые интервалы =====
+$stmt = $pdo->prepare("
+    SELECT start_time, end_time 
+    FROM rent_history 
+    WHERE inventory_id = ? 
+      AND status = 'active'
+");
+$stmt->execute([$inventory_id]);
+$busy_slots = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 
 $error = '';
 $success = '';
@@ -78,8 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['calculate'])) {
     $start_date = $_POST['start_date'];
     $end_date = $_POST['end_date'];
     
-    $start_timestamp = strtotime($start_date);
-    $end_timestamp = strtotime($end_date);
+$start_timestamp = strtotime($_POST['start_date']);  // время начала
+$end_timestamp = strtotime($_POST['end_date']);      // время окончания
     
     if (empty($start_date) || empty($end_date)) {
         $error = 'Заполните обе даты';
@@ -114,11 +111,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['calculate'])) {
 /* Обработка подтверждения аренды */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm'])) {
     $start_date = $_POST['start_date'];
-    $end_date = $_POST['end_date'];
-    
-    $start_timestamp = strtotime($start_date);
-    $end_timestamp = strtotime($end_date);
-    
+    $end_date   = $_POST['end_date'];
+
+$start_timestamp = strtotime($_POST['start_date']);  // время начала
+$end_timestamp = strtotime($_POST['end_date']);      // время окончания
+
     if (empty($start_date) || empty($end_date)) {
         $error = 'Заполните обе даты';
     } elseif ($start_timestamp < time()) {
@@ -126,24 +123,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm'])) {
     } elseif ($end_timestamp <= $start_timestamp) {
         $error = 'Дата окончания должна быть позже даты начала';
     } else {
-        $hours = ($end_timestamp - $start_timestamp) / 3600;
-        
-        if ($hours < 1) {
+        $hours_rounded = ceil(($end_timestamp - $start_timestamp) / 3600);
+        if ($hours_rounded < 1) {
             $error = 'Минимальное время аренды - 1 час';
         } else {
-            $hours_rounded = ceil($hours);
             $days_rounded = ceil($hours_rounded / 24);
-            
+
             $price_hour = (float)$tariff['price_per_hour'];
-            $price_day = (float)$tariff['price_per_day'];
-            
+            $price_day  = (float)$tariff['price_per_day'];
+
             if ($price_day > 0 && $hours_rounded >= 6) {
                 $total_price = $days_rounded * $price_day;
             } else {
                 $total_price = $hours_rounded * $price_hour;
             }
-            
-            /* Добавляем запись в историю аренды */
+
+
+            // ДОБАВЬ ЭТО ПЕРЕД INSERT
+error_log("=== DEBUG rent.php ===");
+error_log("Сейчас: " . date('Y-m-d H:i:s'));
+error_log("start_time для БД: " . date('Y-m-d H:i:s', $start_timestamp));
+error_log("end_time для БД: " . date('Y-m-d H:i:s', $end_timestamp));
+error_log("Разница часов: " . ($end_timestamp - $start_timestamp) / 3600);
+error_log("end_time уже прошел? " . ($end_timestamp < time() ? 'ДА!' : 'нет'));
+error_log("======================");
+
+
+
+            // Добавляем запись в историю аренды
             $stmt = $pdo->prepare("
                 INSERT INTO rent_history (inventory_id, user_id, tariff_id, start_time, end_time, total_price)
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -157,11 +164,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm'])) {
                 $total_price
             ]);
 
-            /* Меняем статус инвентаря */
-            $stmt = $pdo->prepare("
-                UPDATE inventory SET status = 'busy' WHERE id = ?
-            ");
-            $stmt->execute([$inventory_id]);
+
+// Добавьте отладку чтобы убедиться что UPDATE работает
+error_log("UPDATE inventory: id=$inventory_id, rowCount=" . $stmt->rowCount());
+
+            if ($stmt->rowCount() !== 1) {
+                // откат последней аренды ЭТОГО пользователя
+                $pdo->prepare("
+                    DELETE FROM rent_history
+                    WHERE inventory_id = ? AND user_id = ?
+                    ORDER BY id DESC
+                    LIMIT 1
+                ")->execute([$inventory_id, $user_id]);
+
+                die('Товар уже занят или недоступен для аренды');
+            }
 
             header('Location: index.php');
             exit;
@@ -261,7 +278,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm'])) {
                     <?php endif; ?>
                 </div>
 
-                <h4 class="mb-4">Выбор времени аренды</h4>
+                
+                <h4 class="mt-4">Календарь занятости</h4>
+            
+            <?php if (!empty($busy_slots)): ?>
+                <?php foreach ($busy_slots as $slot): ?>
+                    <div style="
+                        background:#f8d7da;
+                        padding:10px;
+                        margin-bottom:8px;
+                        border-radius:6px;
+                    ">
+                        🔴 
+                        <?= date('d.m.Y H:i', strtotime($slot['start_time'])) ?>
+                        —
+                        <?= date('d.m.Y H:i', strtotime($slot['end_time'])) ?>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div style="
+                    background:#d4edda;
+                    padding:10px;
+                    border-radius:6px;
+                ">
+                    🟢 Сейчас нет активных броней
+                </div>
+            <?php endif; ?>
+
+                <h4 class="mt-4">Выбор времени аренды</h4>
 
                 <?php if ($error): ?>
                     <div class="alert alert-danger">
@@ -316,10 +360,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm'])) {
                 <div class="mt-4 pt-3 border-top">
                     <h5>Как это работает:</h5>
                     <ul class="text-muted">
-                        <li>Выберите дату начала и окончания аренды</li>
-                        <li>Нажмите "Рассчитать стоимость"</li>
-                        <li>Проверьте сумму и продолжительность</li>
-                        <li>Если всё верно, нажмите "Подтвердить аренду"</li>
+                        <li>1. Выберите дату начала и окончания аренды</li>
+                        <li>2. Нажмите "Рассчитать стоимость"</li>
+                        <li>3. Проверьте сумму и продолжительность</li>
+                        <li>4. Если всё верно, нажмите "Подтвердить аренду"</li>
                         <li>Кнопка подтверждения активна только после расчета</li>
                     </ul>
                 </div>

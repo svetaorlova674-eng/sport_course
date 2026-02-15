@@ -29,16 +29,16 @@ require 'check_admin.php';
 <div class="container">
     <div class="text-center mb-5">
         <h1 class="display-4">Панель Администратора</h1>
-        <p class="lead">Добро пожаловать, Повелитель! Здесь вы управляете прокатом спортивного инвентаря.</p>
+        <p class="lead">Добро пожаловать! Здесь вы управляете прокатом спортивного инвентаря.</p>
     </div>
 
     <div class="row g-4 justify-content-center">
         <!-- Кнопка добавления инвентаря -->
         <div class="col-md-4">
             <div class="card admin-card shadow-sm text-center p-4">
-                <h5 class="card-title mb-3">Добавить новый инвентарь</h5>
+                <h5 class="card-title mb-3">Добавить инвентарь</h5>
                 <p class="card-text text-muted">Создайте новый предмет для проката</p>
-                <a href="add_item.php" class="btn btn-success btn-custom">+ Добавить инвентарь</a>
+                <a href="add_item.php" class="btn btn-primary btn-custom">+ Добавить</a>
             </div>
         </div>
 
@@ -47,7 +47,7 @@ require 'check_admin.php';
             <div class="card admin-card shadow-sm text-center p-4">
                 <h5 class="card-title mb-3">Управление арендами</h5>
                 <p class="card-text text-muted">Проверьте текущее состояние аренды</p>
-                <a href="admin_rentals.php" class="btn btn-success btn-custom">Перейти</a>
+                <a href="admin_rentals.php" class="btn btn-primary btn-custom">Перейти к арендам</a>
             </div>
         </div>
 
@@ -57,7 +57,7 @@ require 'check_admin.php';
             <div class="card admin-card shadow-sm text-center p-4">
                 <h5 class="card-title mb-3">Просмотр каталога</h5>
                 <p class="card-text text-muted">Посмотрите текущие предметы проката</p>
-                <a href="index.php" class="btn btn-success btn-custom">Перейти в каталог</a>
+                <a href="index.php" class="btn btn-primary btn-custom">Перейти в каталог</a>
             </div>
         </div>
 

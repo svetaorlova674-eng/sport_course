@@ -8,6 +8,34 @@ ini_set('display_errors', 1);
 // Подключаем БД
 require_once __DIR__ . '/../config/db.php';
 
+// Массив видов спорта → категории → типы
+$sports = [
+    'Велосипеды' => [
+        'Велосипед горный' => 'Инвентарь',
+        'Велосипед городской' => 'Инвентарь',
+        'Шлем' => 'Экипировка',
+        'Велозащита' => 'Экипировка'
+    ],
+    'Лыжи' => [
+        'Лыжи горные' => 'Инвентарь',
+        'Ботинки горнолыжные' => 'Экипировка',
+        'Палки горнолыжные' => 'Инвентарь'
+    ],
+    'Сноуборды' => [
+        'Сноуборд' => 'Инвентарь',
+        'Ботинки' => 'Экипировка',
+        'Крепления' => 'Инвентарь'
+    ],
+    'Самокаты' => [
+        'Самокат городской' => 'Инвентарь',
+        'Самокат трюковой' => 'Инвентарь'
+    ],
+    'Другое' => [
+        'Прочее' => 'Инвентарь'
+    ]
+];
+
+
 // Проверяем админские права
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
     header('Location: login.php');
@@ -20,24 +48,73 @@ $message = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $name = trim($_POST['name']);
+        $sport = trim($_POST['sport']);
         $category = trim($_POST['category']);
+        $type = trim($_POST['type']);
         $description = trim($_POST['description']);
-        $image_url = trim($_POST['image_url']);
+        $image_url = null;
         $price_per_day = isset($_POST['price_per_day']) ? floatval($_POST['price_per_day']) : 0;
         $price_per_hour = isset($_POST['price_per_hour']) ? floatval($_POST['price_per_hour']) : 0;
 
-        if (empty($name) || empty($category)) {
-            $message = '<div class="alert alert-danger">Заполните название и категорию!</div>';
+        if (empty($name) || empty($category) || empty($type) || empty($sport)) {
+            $message = '<div class="alert alert-danger">Заполните название, вид спорта, категорию и тип!</div>';
         } else {
             $user_id = intval($_SESSION['user_id']);
+        }
+
+          /* ========= НАЧАЛО: ЗАГРУЗКА ФАЙЛА ========= */
+if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
+
+    $uploadDir = __DIR__ . '/uploads/';
+
+    if (!is_dir($uploadDir)) {
+        mkdir($uploadDir, 0755, true);
+    }
+
+    $allowed = [
+        'image/jpeg' => 'jpg',
+        'image/pjpeg'=> 'jpg', // IE старые версии
+        'image/png'  => 'png',
+        'image/x-png'=> 'png', // старые варианты
+        'image/gif'  => 'gif'
+    ];
+
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime  = finfo_file($finfo, $_FILES['file']['tmp_name']);
+    finfo_close($finfo);
+
+    if (!isset($allowed[$mime])) {
+        // Альтернатива: проверить начало строки
+        if (substr($mime, 0, 5) !== 'image') {
+            throw new Exception('Разрешены только JPG, PNG, GIF');
+        }
+    }
+
+    if (!getimagesize($_FILES['file']['tmp_name'])) {
+        throw new Exception('Файл не является изображением');
+    }
+
+    // Определяем расширение
+    $ext = isset($allowed[$mime]) ? $allowed[$mime] : pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
+    $filename = uniqid('item_') . '.' . $ext;
+
+    if (!move_uploaded_file($_FILES['file']['tmp_name'], $uploadDir . $filename)) {
+        throw new Exception('Ошибка сохранения файла');
+    }
+
+    $image_url = 'uploads/' . $filename;
+}
+/* ========= КОНЕЦ: ЗАГРУЗКА ФАЙЛА ========= */
 
             // 3. Сохраняем в inventory без цены
-            $sql = "INSERT INTO inventory (name, category, description, image_url, status, user_id) 
-                    VALUES (:name, :category, :description, :image_url, 'free', :user_id)";
+            $sql = "INSERT INTO inventory (name, sport, category, type, description, image_url, status, user_id) 
+                    VALUES (:name, :sport, :category, :type, :description, :image_url, 'free', :user_id)";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([
                 ':name' => $name,
+                ':sport' => $sport,
                 ':category' => $category,
+                ':type' => $type,
                 ':description' => $description,
                 ':image_url' => $image_url,
                 ':user_id' => $user_id
@@ -57,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $message = '<div class="alert alert-success">Инвентарь успешно добавлен!</div>';
             $_POST = [];
-        }
+            
     } catch (PDOException $e) {
         $message = '<div class="alert alert-danger">Ошибка БД: ' . htmlspecialchars($e->getMessage()) . '</div>';
     }
@@ -108,24 +185,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <?= $message ?>
 
-                <form method="POST" id="addItemForm">
+<form method="POST" action="" id="addItemForm" enctype="multipart/form-data">
+
+
                     <div class="mb-3">
                         <label for="name" class="form-label">Название инвентаря *</label>
                         <input type="text" id="name" name="name" class="form-control" value="<?= isset($_POST['name']) ? htmlspecialchars($_POST['name']) : '' ?>" required placeholder="Например: Горный велосипед">
                     </div>
-
+                    
+                    <!-- Вид спорта -->
                     <div class="mb-3">
-                        <label for="category" class="form-label">Категория *</label>
-                        <select id="category" name="category" class="form-select" required>
-                            <option value="">Выберите категорию</option>
-                            <option value="Велосипеды" <?= isset($_POST['category']) && $_POST['category'] == 'Велосипеды' ? 'selected' : '' ?>>Велосипеды</option>
-                            <option value="Лыжи" <?= isset($_POST['category']) && $_POST['category'] == 'Лыжи' ? 'selected' : '' ?>>Лыжи</option>
-                            <option value="Сноуборды" <?= isset($_POST['category']) && $_POST['category'] == 'Сноуборды' ? 'selected' : '' ?>>Сноуборды</option>
-                            <option value="Ролики" <?= isset($_POST['category']) && $_POST['category'] == 'Ролики' ? 'selected' : '' ?>>Ролики</option>
-                            <option value="Коньки" <?= isset($_POST['category']) && $_POST['category'] == 'Коньки' ? 'selected' : '' ?>>Коньки</option>
-                            <option value="Другое" <?= isset($_POST['category']) && $_POST['category'] == 'Другое' ? 'selected' : '' ?>>Другое</option>
+                        <label class="form-label">Вид спорта *</label>
+                        <select name="sport" class="form-select" required>
+                            <option value="">Выберите вид спорта</option>
+                            <option value="Велоспорт">Велоспорт</option>
+                            <option value="Горные лыжи">Лыжный спорт</option>
+                            <option value="Сноубординг">Сноубординг</option>
+                            <option value="Самокаты">Кикскутеринг</option>
                         </select>
                     </div>
+                    
+                    
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Категория *</label>
+                        <select name="category" class="form-select" required>
+                            <option value="">Выберите категорию</option>
+                            <option value="Инвентарь">Инвентарь</option>
+                            <option value="Экипировка">Экипировка</option>
+                        </select>
+                    </div>
+                    
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Тип *</label>
+                        <select name="type" class="form-select" required>
+                            <option value="">Выберите тип</option>
+                    
+                            <!-- Инвентарь -->
+                            <option value="Велосипед">Велосипед</option>
+                            <option value="Лыжи">Лыжи</option>
+                            <option value="Сноуборд">Сноуборд</option>
+                            <option value="Самокат">Самокат</option>
+                    
+                            <!-- Экипировка -->
+                            <option value="Шлем">Шлем</option>
+                            <option value="Ботинки горнолыжные">Ботинки горнолыжные</option>
+                            <option value="Крепления для сноуборда">Крепления для сноуборда</option>
+                            <option value="Палки горнолыжные">Палки горнолыжные</option>
+                            <option value="Велозащита">Велозащита</option>
+                        </select>
+                    </div>
+
 
                     <!-- Добавляем цену за час -->
                     <div class="mb-3">
@@ -140,8 +251,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
 
                     <div class="mb-3">
-                        <label for="image_url" class="form-label">Ссылка на изображение</label>
-                        <input type="url" id="image_url" name="image_url" class="form-control" value="<?= isset($_POST['image_url']) ? htmlspecialchars($_POST['image_url']) : '' ?>" placeholder="https://example.com/image.jpg">
+                  
+                        <div class="mb-3">
+    <label class="form-label">Изображение инвентаря</label>
+<input type="file"
+       name="file"
+       id="fileInput"
+       class="form-control"
+       accept="image/jpeg,image/png,image/gif"
+       required>
+</div>
+
                         <img id="imagePreview" src="" alt="Превью" class="img-fluid mt-2 preview-img">
                     </div>
 
@@ -173,26 +293,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Предпросмотр изображения
-    document.getElementById('image_url').addEventListener('input', function() {
-        const preview = document.getElementById('imagePreview');
-        const url = this.value.trim();
-        if (url) {
-            preview.src = url;
-            preview.style.display = 'block';
-            preview.onerror = function() { preview.style.display = 'none'; preview.src = ''; };
-        } else {
-            preview.style.display = 'none';
-            preview.src = '';
-        }
-    });
+document.getElementById('fileInput').addEventListener('change', function () {
+    const file = this.files[0];
+    const preview = document.getElementById('imagePreview');
 
-    // Валидация формы
-    document.getElementById('addItemForm').addEventListener('submit', function(e) {
-        const name = document.getElementById('name').value.trim();
-        const category = document.getElementById('category').value;
-        if (!name || !category) { e.preventDefault(); alert('Пожалуйста, заполните обязательные поля (Название и Категория)'); return false; }
-    });
+    if (!file) {
+        preview.style.display = 'none';
+        preview.src = '';
+        return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+        alert('Можно выбрать только изображение');
+        this.value = '';
+        preview.style.display = 'none';
+        preview.src = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+});
 </script>
 </body>
 </html>
