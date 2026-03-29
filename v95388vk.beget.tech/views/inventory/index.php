@@ -91,7 +91,7 @@ $filterGet = array_filter(array(
         ?>
         <div class="col-md-4 mb-4">
             <div class="card h-100">
-                <img src="<?php echo $img; ?>" class="card-img-top img-fluid" alt="Фото инвентаря"
+                <img src="<?php echo htmlspecialchars($img, ENT_QUOTES, \'UTF-8\'); ?>" class="card-img-top img-fluid" alt="Фото инвентаря"
                      style="height:200px;object-fit:contain;">
                 <div class="card-body">
                     <h5 class="card-title">
@@ -177,7 +177,7 @@ $filterGet = array_filter(array(
             }
             for ($p = $start; $p <= $end; $p++): ?>
                 <li class="page-item <?php echo $p === $currentPage ? 'active' : ''; ?>">
-                    <a class="page-link" href="?<?php echo http_build_query(array_merge($filterGet, array('page' => $p))); ?>"><?php echo $p; ?></a>
+                    <a class="page-link" href="?<?php echo http_build_query(array_merge($filterGet, array('page' => $p))); ?>"><?php echo htmlspecialchars($p, ENT_QUOTES, \'UTF-8\'); ?></a>
                 </li>
             <?php endfor;
             if ($end < $totalPages) {

@@ -29,7 +29,7 @@ require ROOT . '/views/layout/header.php';
                     <p class="text-muted">Заполните форму для добавления спортивного инвентаря</p>
                 </div>
 
-                <?php echo $message; ?>
+                <?php echo htmlspecialchars($message, ENT_QUOTES, \'UTF-8\'); ?>
 
                 <form method="POST" action="/admin/add-item" id="addItemForm" enctype="multipart/form-data">
 

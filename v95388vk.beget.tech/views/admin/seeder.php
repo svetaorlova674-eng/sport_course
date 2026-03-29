@@ -19,7 +19,7 @@ require ROOT . '/views/layout/header.php';
         <div class="card-body">
 
             <?php if ($message): ?>
-                <?php echo $message; ?>
+                <?php echo htmlspecialchars($message, ENT_QUOTES, \'UTF-8\'); ?>
             <?php endif; ?>
 
             <!-- Форма генерации -->

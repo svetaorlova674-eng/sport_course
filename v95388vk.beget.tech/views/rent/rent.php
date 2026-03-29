@@ -51,7 +51,7 @@ require ROOT . '/views/layout/header.php';
             <?php if ($success): ?>
                 <div class="alert alert-success">
                     <?php echo e($success); ?>
-                    <br>Продолжительность: <?php echo $duration_hours; ?> часов
+                    <br>Продолжительность: <?php echo htmlspecialchars($duration_hours, ENT_QUOTES, \'UTF-8\'); ?> часов
                     (<?php echo round($duration_hours / 24, 1); ?> дней)
                     <div class="total-price mt-2">
                         К оплате: <?php echo number_format($calculated_price, 2); ?> ₽

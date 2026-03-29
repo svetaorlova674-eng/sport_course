@@ -47,11 +47,11 @@ require ROOT . '/views/layout/header.php';
                 <div class="card-body">
                     <?php if (!empty($r['inventory_description'])): ?>
                         <?php $descId = 'desc_' . (int)$r['id']; ?>
-                        <div id="<?php echo $descId; ?>"
+                        <div id="<?php echo htmlspecialchars($descId, ENT_QUOTES, \'UTF-8\'); ?>"
                              style="max-height:60px;overflow:hidden;font-size:14px;color:#555;margin-bottom:4px;">
                             <?php echo e($r['inventory_description']); ?>
                         </div>
-                        <button onclick="toggleDesc('<?php echo $descId; ?>',this)"
+                        <button onclick="toggleDesc('<?php echo htmlspecialchars($descId, ENT_QUOTES, \'UTF-8\'); ?>',this)"
                                 class="btn btn-link btn-sm p-0 mb-2" style="font-size:13px;">
                             Показать полностью ▼
                         </button>
@@ -70,7 +70,7 @@ require ROOT . '/views/layout/header.php';
                         );
                         $s = isset($sm[$r['status']]) ? $sm[$r['status']] : array($r['status'], 'bg-secondary');
                         ?>
-                        <span class="badge <?php echo $s[1]; ?>"><?php echo $s[0]; ?></span>
+                        <span class="badge <?php echo htmlspecialchars($s[1], ENT_QUOTES, \'UTF-8\'); ?>"><?php echo htmlspecialchars($s[0], ENT_QUOTES, \'UTF-8\'); ?></span>
                     </p>
 
                     <?php if ($r['status'] === 'active' && $r['inventory_status'] !== 'archived'): ?>

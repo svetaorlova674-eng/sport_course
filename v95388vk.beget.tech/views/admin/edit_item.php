@@ -15,7 +15,7 @@ require ROOT . '/views/layout/header.php';
             <div class="card shadow-sm p-4">
                 <h4 class="text-center mb-3">Редактирование инвентаря</h4>
 
-                <?php echo $message; ?>
+                <?php echo htmlspecialchars($message, ENT_QUOTES, \'UTF-8\'); ?>
 
                 <form method="POST" action="/admin/edit-item?id=<?php echo (int)$item['id']; ?>" enctype="multipart/form-data">
 
@@ -84,7 +84,7 @@ require ROOT . '/views/layout/header.php';
                         <label class="form-label">Статус инвентаря</label>
                         <select name="status" class="form-select">
                             <?php foreach (array('free'=>'Доступен','busy'=>'Занят','archived'=>'В архиве') as $val => $label): ?>
-                                <option value="<?php echo $val; ?>" <?php echo $item['status'] === $val ? 'selected' : ''; ?>><?php echo $label; ?></option>
+                                <option value="<?php echo htmlspecialchars($val, ENT_QUOTES, \'UTF-8\'); ?>" <?php echo $item['status'] === $val ? 'selected' : ''; ?>><?php echo htmlspecialchars($label, ENT_QUOTES, \'UTF-8\'); ?></option>
                             <?php endforeach; ?>
                         </select>
                         <?php if ($item['status'] === 'busy'): ?>
