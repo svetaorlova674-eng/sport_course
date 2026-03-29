@@ -13,11 +13,11 @@ require ROOT . '/views/layout/header.php';
                 <div class="card-body">
 
                     <?php if (!empty($_SESSION['reg_error'])): ?>
-                        <div class="alert alert-danger"><?php echo $_SESSION['reg_error']; unset($_SESSION['reg_error']); ?></div>
+                        <div class="alert alert-danger"><?php echo htmlspecialchars($_SESSION['reg_error'], ENT_QUOTES, \'UTF-8\'); unset($_SESSION['reg_error']); ?></div>
                     <?php endif; ?>
 
                     <?php if (!empty($_SESSION['reg_success'])): ?>
-                        <div class="alert alert-success"><?php echo $_SESSION['reg_success']; unset($_SESSION['reg_success']); ?></div>
+                        <div class="alert alert-success"><?php echo htmlspecialchars($_SESSION['reg_success'], ENT_QUOTES, \'UTF-8\'); unset($_SESSION['reg_success']); ?></div>
                     <?php else: ?>
 
                     <form method="POST" action="/register">

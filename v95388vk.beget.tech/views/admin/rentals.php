@@ -102,10 +102,10 @@ function calculate_total($start, $end, $price_hour, $price_day) {
                 }
             ?>
             <tr>
-                <td><?php echo $r['id']; ?></td>
+                <td><?php echo htmlspecialchars($r['id'], ENT_QUOTES, \'UTF-8\'); ?></td>
                 <td><?php echo e($r['inventory_name']); ?></td>
                 <td><?php echo e($r['email']); ?></td>
-                <td><span class="badge <?php echo $badge; ?>"><?php echo $label; ?></span></td>
+                <td><span class="badge <?php echo htmlspecialchars($badge, ENT_QUOTES, \'UTF-8\'); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES, \'UTF-8\'); ?></span></td>
                 <td><?php echo is_numeric($r['price_per_hour']) ? $r['price_per_hour'] . ' ₽' : '-'; ?></td>
                 <td><?php echo is_numeric($r['price_per_day'])  ? $r['price_per_day']  . ' ₽' : '-'; ?></td>
                 <td><?php echo date('d.m.Y H:i', strtotime($r['start_time'])); ?></td>
@@ -140,8 +140,8 @@ function calculate_total($start, $end, $price_hour, $price_day) {
         ?>
         <div class="card mb-3 shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <strong>#<?php echo $r['id']; ?> <?php echo e($r['inventory_name']); ?></strong>
-                <span class="badge <?php echo $badge; ?>"><?php echo $label; ?></span>
+                <strong>#<?php echo htmlspecialchars($r['id'], ENT_QUOTES, \'UTF-8\'); ?> <?php echo e($r['inventory_name']); ?></strong>
+                <span class="badge <?php echo htmlspecialchars($badge, ENT_QUOTES, \'UTF-8\'); ?>"><?php echo htmlspecialchars($label, ENT_QUOTES, \'UTF-8\'); ?></span>
             </div>
             <div class="card-body py-2" style="font-size:14px;">
                 <div class="row g-1">
@@ -150,10 +150,10 @@ function calculate_total($start, $end, $price_hour, $price_day) {
                     <div class="col-6"><span class="text-muted">Начало:</span><br><?php echo date('d.m.Y H:i', strtotime($r['start_time'])); ?></div>
                     <div class="col-6"><span class="text-muted">Окончание:</span><br><?php echo $r['end_time'] ? date('d.m.Y H:i', strtotime($r['end_time'])) : '-'; ?></div>
                     <?php if ($r['price_per_hour']): ?>
-                    <div class="col-6"><span class="text-muted">Цена/ч:</span><br><?php echo $r['price_per_hour']; ?> ₽</div>
+                    <div class="col-6"><span class="text-muted">Цена/ч:</span><br><?php echo htmlspecialchars($r['price_per_hour'], ENT_QUOTES, \'UTF-8\'); ?> ₽</div>
                     <?php endif; ?>
                     <?php if ($r['price_per_day']): ?>
-                    <div class="col-6"><span class="text-muted">Цена/день:</span><br><?php echo $r['price_per_day']; ?> ₽</div>
+                    <div class="col-6"><span class="text-muted">Цена/день:</span><br><?php echo htmlspecialchars($r['price_per_day'], ENT_QUOTES, \'UTF-8\'); ?> ₽</div>
                     <?php endif; ?>
                     <?php if ($r['refund_amount'] > 0): ?>
                     <div class="col-6"><span class="text-muted">Возврат:</span><br><?php echo number_format($r['refund_amount'], 2); ?> ₽</div>

@@ -14,10 +14,10 @@ require ROOT . '/views/layout/header.php';
         <div class="alert alert-success"><?php echo e($success); ?></div>
         <a href="/profile" class="btn btn-secondary">В профиль</a>
     <?php else: ?>
-        <p><strong>Начало:</strong> <?php echo $rent['start_time']; ?></p>
-        <p><strong>Плановое окончание:</strong> <?php echo $rent['end_time']; ?></p>
-        <p><strong>Оплачено часов:</strong> <?php echo $paid_hours; ?></p>
-        <p><strong>Использовано часов:</strong> <?php echo $used_hours; ?></p>
+        <p><strong>Начало:</strong> <?php echo htmlspecialchars($rent['start_time'], ENT_QUOTES, \'UTF-8\'); ?></p>
+        <p><strong>Плановое окончание:</strong> <?php echo htmlspecialchars($rent['end_time'], ENT_QUOTES, \'UTF-8\'); ?></p>
+        <p><strong>Оплачено часов:</strong> <?php echo htmlspecialchars($paid_hours, ENT_QUOTES, \'UTF-8\'); ?></p>
+        <p><strong>Использовано часов:</strong> <?php echo htmlspecialchars($used_hours, ENT_QUOTES, \'UTF-8\'); ?></p>
         <div class="alert alert-info"><strong>Сумма к возврату:</strong> <?php echo number_format($refund, 2); ?> ₽</div>
 
         <form method="POST" action="/return?id=<?php echo (int)$rent['id']; ?>">
