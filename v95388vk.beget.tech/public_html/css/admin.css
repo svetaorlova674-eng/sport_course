@@ -1,0 +1,17 @@
+body { background-color: #f8f9fa; }
+
+/* admin_panel */
+.admin-card { transition: transform 0.2s; }
+.admin-card:hover { transform: scale(1.05); }
+.btn-custom { min-width: 200px; }
+
+/* add_item */
+.form-label { font-weight: 500; color: #495057; }
+.btn-submit { padding: 10px 30px; font-weight: 500; }
+.preview-img {
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: 8px;
+    display: none;
+    margin-top: 10px;
+}
