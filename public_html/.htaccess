@@ -1,0 +1,10 @@
+Options -Indexes
+
+RewriteEngine On
+
+# Если это реальный файл (картинка, css, js) — отдаём напрямую
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Всё остальное — в index.php
+RewriteRule ^(.*)$ index.php [QSA,L]
