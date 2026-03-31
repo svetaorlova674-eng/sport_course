@@ -4,7 +4,7 @@ date_default_timezone_set('Asia/Krasnoyarsk'); // UTC+7
 $host    = 'localhost';
 $db      = 'v95388vk_sport';
 $user    = 'v95388vk_sport';
-$pass    = 'TRIksivi0903!';
+$pass    = '';
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
@@ -16,7 +16,7 @@ $options = array(
 );
 
 try {
-    $pdo = new PDO($dsn, $user, $pass, $options);
+    $pdo = new PDO($dsn, $user, $options);
     $pdo->exec("SET time_zone = '+07:00'");
 } catch (PDOException $e) {
     throw new PDOException($e->getMessage(), (int)$e->getCode());
