@@ -16,7 +16,7 @@ $options = array(
 );
 
 try {
-    $pdo = new PDO($dsn, $user, $pass, $options);
+    $pdo = new PDO($dsn, $user, $options);
     $pdo->exec("SET time_zone = '+07:00'");
 } catch (PDOException $e) {
     throw new PDOException($e->getMessage(), (int)$e->getCode());
